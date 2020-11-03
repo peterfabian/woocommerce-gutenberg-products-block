@@ -3,6 +3,7 @@
  */
 import {
 	OrderSummary,
+	OrderReview,
 	SubtotalsItem,
 	TotalsFeesItem,
 	TotalsCouponCodeInput,
@@ -72,6 +73,7 @@ const CheckoutSidebar = ( {
 				currency={ totalsCurrency }
 				values={ cartTotals }
 			/>
+			<OrderReview.Slot />
 		</>
 	);
 };

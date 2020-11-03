@@ -1,4 +1,9 @@
 /**
+ * External dependencies
+ */
+import { SlotFillProvider } from 'wordpress-components';
+
+/**
  * Internal dependencies
  */
 import { PaymentMethodDataProvider } from '../payment-methods';
@@ -24,7 +29,7 @@ export const CheckoutProvider = ( { children, redirectUrl } ) => {
 			<BillingDataProvider>
 				<ShippingDataProvider>
 					<PaymentMethodDataProvider>
-						{ children }
+						<SlotFillProvider>{ children }</SlotFillProvider>
 						<CheckoutProcessor />
 					</PaymentMethodDataProvider>
 				</ShippingDataProvider>
