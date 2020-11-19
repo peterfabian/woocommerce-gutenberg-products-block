@@ -44,6 +44,15 @@ abstract class AbstractRoute implements RouteInterface {
 	}
 
 	/**
+	 * Refresh the nonce and set nonce header.
+	 *
+	 * @param \WP_REST_Response $response Response object.
+	 */
+	public function refresh_nonce( \WP_REST_Response $response ) {
+		$response->header( 'X-WC-Store-API-Nonce', wp_create_nonce( 'wc_store_api' ) );
+	}
+
+	/**
 	 * Get the route response based on the type of request.
 	 *
 	 * @param \WP_REST_Request $request Request object.
@@ -71,7 +80,7 @@ abstract class AbstractRoute implements RouteInterface {
 					break;
 			}
 			if ( 'GET' !== $request->get_method() && ! is_wp_error( $response ) ) {
-				$response->header( 'X-WC-Store-API-Nonce', wp_create_nonce( 'wc_store_api' ) );
+				$this->refresh_nonce( $response );
 			}
 		} catch ( RouteException $error ) {
 			$response = $this->get_route_error_response( $error->getErrorCode(), $error->getMessage(), $error->getCode(), $error->getAdditionalData() );

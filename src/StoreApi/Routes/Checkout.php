@@ -204,6 +204,9 @@ class Checkout extends AbstractRoute {
 			$request
 		);
 
+		// Generate a fresh nonce, previous one may be invalidated by login (create account).
+		$this->refresh_nonce( $response );
+
 		switch ( $payment_result->status ) {
 			case 'success':
 				$response->set_status( 200 );
