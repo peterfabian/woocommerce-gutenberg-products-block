@@ -146,6 +146,8 @@ class Checkout extends AbstractRoute {
 	protected function get_route_post_response( \WP_REST_Request $request ) {
 		$order_controller = new OrderController();
 		$order_object     = $this->get_draft_order_object( $this->get_draft_order_id() );
+		$order_errors     = [];
+		$payment_result   = new PaymentResult( 'failure' );
 
 		if ( ! $order_object instanceof \WC_Order ) {
 			throw new RouteException(
@@ -177,29 +179,39 @@ class Checkout extends AbstractRoute {
 		$this->update_order_from_request( $order_object, $request );
 
 		// Check order is still valid.
-		$order_controller->validate_order_before_payment( $order_object );
+		$validation_result = $order_controller->validate_order_before_payment( $order_object );
+		if ( $validation_result instanceof \Automattic\WooCommerce\Blocks\StoreApi\Routes\RouteException ) {
+			$order_errors[] = [
+				'code'    => $validation_result->getErrorCode(),
+				'message' => $validation_result->getMessage(),
+			];
+		}
 
-		// Persist customer address data to account.
-		$order_controller->sync_customer_data_with_order( $order_object );
+		// Skip further processing if there are any errors.
+		if ( empty( $order_errors ) ) {
+			// Persist customer address data to account.
+			$order_controller->sync_customer_data_with_order( $order_object );
 
-		/*
-		* Fire woocommerce_blocks_checkout_order_processed, should work the same way as woocommerce_checkout_order_processed
-		* But we're opting for a new action because the original ones attaches POST data.
-		* NOTE: this hook is still experimental, and might change or get removed.
-		* @todo: Document and stabilize __experimental_woocommerce_blocks_checkout_order_processed
-		*/
-		do_action( '__experimental_woocommerce_blocks_checkout_order_processed', $order_object );
+			/*
+			* Fire woocommerce_blocks_checkout_order_processed, should work the same way as woocommerce_checkout_order_processed
+			* But we're opting for a new action because the original ones attaches POST data.
+			* NOTE: this hook is still experimental, and might change or get removed.
+			* @todo: Document and stabilize __experimental_woocommerce_blocks_checkout_order_processed
+			*/
+			do_action( '__experimental_woocommerce_blocks_checkout_order_processed', $order_object );
 
-		if ( ! $order_object->needs_payment() ) {
-			$payment_result = $this->process_without_payment( $order_object, $request );
-		} else {
-			$payment_result = $this->process_payment( $order_object, $request );
+			if ( ! $order_object->needs_payment() ) {
+				$payment_result = $this->process_without_payment( $order_object, $request );
+			} else {
+				$payment_result = $this->process_payment( $order_object, $request );
+			}
 		}
 
 		$response = $this->prepare_item_for_response(
 			(object) [
 				'order'          => wc_get_order( $order_object ),
 				'payment_result' => $payment_result,
+				'errors'         => $order_errors,
 			],
 			$request
 		);

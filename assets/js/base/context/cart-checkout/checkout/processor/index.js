@@ -240,7 +240,19 @@ const CheckoutProcessor = () => {
 			} )
 			.catch( ( error ) => {
 				error.json().then( function ( response ) {
-					// If updated cart state was returned, also update that.
+					if ( response.errors ) {
+						// Request includes error info - show as notice(s).
+						response.errors.forEach( ( err ) => {
+							addErrorNotice( err.message, {
+								id: 'checkout',
+							} );
+						} );
+					}
+					// If new customer ID returned, update the store.
+					if ( response.customer_id ) {
+						dispatchActions.setCustomerId( response.customer_id );
+					}
+					// If updated cart state was returned, update the store.
 					if ( response.data?.cart ) {
 						receiveCart( response.data.cart );
 					}
